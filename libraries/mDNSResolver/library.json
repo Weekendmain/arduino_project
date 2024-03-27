@@ -1,0 +1,16 @@
+{
+    "name": "mDNSResolver",
+    "keywords": "ethernet, iot, mdns, bonjour, esp8266",
+    "description": "A simple library that resolves mDNS (Bonjour) names for the ESP8266",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/lbussy/mDNSResolver.git"
+    },
+    "version": "1.0.0",
+    "exclude": "tests,fixtures,mocks",
+    "examples": "examples/*/*.ino",
+    "frameworks": "arduino",
+    "platforms": [
+        "espressif8266"
+    ]
+}

@@ -1,0 +1,30 @@
+#######################################
+# Syntax Coloring Map For mDNSResolver
+#######################################
+
+#######################################
+# Datatypes and Classes (KEYWORD1)
+#######################################
+
+mDNSResolver	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+setLocalIP  KEYWORD2
+search      KEYWORD2
+lastResult  KEYWORD2
+loop        KEYWORD2
+project     KEYWORD2
+version     KEYWORD2
+branch      KEYWORD2
+build       KEYWORD2
+
+#######################################
+# Instances (KEYWORD2)
+#######################################
+
+#######################################
+# Constants (LITERAL1)
+#######################################
