@@ -14,7 +14,6 @@
 #include <WiFiUdp.h>
 #include <Wire.h>
 
-
 #include "Si115X.h"
 Si115X si1151;
 
@@ -23,14 +22,15 @@ U8G2_SSD1306_128X64_ALT0_F_HW_I2C u8g2(
 // Lichtsensor
 SI114X SI1145 = SI114X();
 
-char ssid[] = "Artem";  //  your network SSID (name)
-char pass[] = "12345678";         // your network password
+char ssid[] = "iPhone (Artem)";  //  your network SSID (name)
+char pass[] = "12345678";        // your network password
 int keyIndex = 0;  // your network key Index number (needed only for WEP)
 int status = WL_IDLE_STATUS;  // Statuscode für das WiFi Modul
-WiFiServer server(80);        // server socket
-WiFiClient client = server.available();  // HTTP Client um auf Requests zu antworten
 
-String curr_line = "";  // Dynamischer Buffer für die HTTP Requests
+WiFiServer server(80);  // server socket
+
+WiFiClient client =
+    server.available();  // HTTP Client um auf Requests zu antworten
 
 #define DHTTYPE DHT11
 //#define DHTTYPE DHT20
@@ -190,6 +190,9 @@ void loop() {
   */
   client = server.available();
 
+  if (client) {
+    printWEB();
+  }
 }
 
 void printWifiStatus() {
@@ -226,7 +229,6 @@ void enable_WiFi() {
     Serial.println("Please upgrade the firmware");
   }
 }
-
 void connect_WiFi() {
   // attempt to connect to Wifi network:
   while (status != WL_CONNECTED) {
@@ -236,9 +238,90 @@ void connect_WiFi() {
     // network:
     status = WiFi.begin(ssid, pass);
 
-    delay(1500);
+    // wait 10 seconds for connection:
+    delay(10000);
   }
 }
+// Website
+void printWEB() {
+  if (client) {                    // if you get a client,
+    Serial.println("new client");  // print a message out the serial port
+    String currentLine =
+        "";  // make a String to hold incoming data from the client
+    while (client.connected()) {  // loop while the client's connected
+      if (client.available()) {   // if there's bytes to read from the client,
+        char c = client.read();   // read a byte, then
+        Serial.write(c);          // print it out the serial monitor
+        if (c == '\n') {          // if the byte is a newline character
+
+          // if the current line is blank, you got two newline characters in a
+          // row. that's the end of the client HTTP request, so send a response:
+          if (currentLine.length() == 0) {
+            // HTTP headers always start with a response code (e.g. HTTP/1.1 200
+            // OK) and a content-type so the client knows what's coming, then a
+            // blank line:
+            client.println("HTTP/1.1 200 OK");
+            client.println("Content-type:text/html");
+            client.println();
+
+            // Display the HTML web page
+            client.println("<!DOCTYPE html><html>");
+            client.println(
+                "<head><meta name=\"viewport\" content=\"width=device-width, "
+                "initial-scale=1\">");
+            client.println("<link rel=\"icon\" href=\"data:,\">");
+            // CSS to style the on/off buttons
+            // Feel free to change the background-color and font-size attributes
+            // to fit your preferences
+            client.println(
+                "<style>html { font-family: Helvetica; display: inline-block; "
+                "margin: 0px auto; text-align: center;}");
+            client.println(
+                ".on { background-color: #FF0000; border: 5px; color: white; "
+                "padding: 16px 40px; border-radius: 20px;");
+            client.println(
+                "text-decoration: none; font-size: 30px; margin: 2px; cursor: "
+                "pointer;}");
+            client.println(
+                ".off {background-color: #000000;border: 5px; color: white; "
+                "padding: 16px 40px; border-radius: 20px;");
+            client.println(
+                "text-decoration: none; font-size: 30px; margin: 2px; cursor: "
+                "pointer;}</style></head>");
+
+            // Web Page Heading
+            client.println("<body><h1>SriTu Hobby IOT system</h1>");
+            client.println("<p>Relay " + output + "</p>");
+            if (output == "off") {
+              client.println(
+                  "<p><a href=\"/on\"><button "
+                  "class=\"off\">OFF</button></a></p>");
+            } else {
+              client.println(
+                  "<p><a href=\"/off\"><button "
+                  "class=\"on\">ON</button></a></p>");
+            }
+
+            client.println("</body></html>");
+            // The HTTP response ends with another blank line:
+            client.println();
+            // break out of the while loop:
+            break;
+          } else {  // if you got a newline, then clear currentLine:
+            currentLine = "";
+          }
+        } else if (c != '\r') {  // if you got anything else but a carriage
+                                 // return character,
+          currentLine += c;      // add it to the end of the currentLine
+        }
+      }
+    }
+    // close the connection:
+    client.stop();
+    Serial.println("client disconnected");
+  }
+}
+
 float readDHTTemperature() {
   // Sensor readings may also be up to 2 seconds
   // Read temperature as Celsius (the default)
@@ -251,7 +334,6 @@ float readDHTTemperature() {
     return t;
   }
 }
-
 float readDHTHumidity() {
   // Sensor readings may also be up to 2 seconds
   float h = dht.readHumidity();
