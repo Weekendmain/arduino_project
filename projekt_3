@@ -39,6 +39,7 @@ WiFiServer server(80);
 #define DataUpdateInterval 20000
 #define NoWaterTimeOut 3
 #define DHTPIN 2
+#define PUMPPIN 4
 DHT dht(DHTPIN, DHTTYPE);
 
 unsigned int uiWaterVolume = 0;
@@ -51,9 +52,9 @@ const int RELAY_PIN = 6;   // Arduino pin connected to relay's pin
 unsigned long counter = 0;
 
 // for water flow sensor
-volatile int flow_frequency;   // Measures flow sensor pulsesunsigned
-int l_hour;                    // Calculated litres/hour
-unsigned char flowsensor = 2;  // Sensor Input
+volatile int flow_frequency = 0;  // Measures flow sensor pulsesunsigned
+int l_min;                        // Calculated litres/hour
+unsigned char flowsensor = 2;     // Sensor Input
 unsigned long currentTime;
 unsigned long cloopTime;
 
@@ -149,13 +150,16 @@ void setup() {
   pinMode(3, INPUT);
   pinMode(4, OUTPUT);
   // Setze den Pin für das Relay der Pumpe als Ausgang
-  pinMode(4, OUTPUT);
+  pinMode(PUMPPIN, OUTPUT);
 
   // Setze den Pin für das Relay des Lüfters als Ausgang
   // pinMode(5, OUTPUT);
 
   pinMode(8, INPUT);
   digitalWrite(8, HIGH);
+
+  attachInterrupt(
+      8, []() { flow_frequency++; }, RISING);
 
   // Water Flow Sensor
   pinMode(flowsensor, INPUT);
@@ -275,14 +279,18 @@ void loop() {
 
   // Water Flow Sensor
   currentTime = millis();  // Every second, calculate and print litres/hour
-  if (currentTime >= (cloopTime + 1000)) {
+  if (currentTime >= (cloopTime >= 1000)) {
     cloopTime = currentTime;  // Updates cloopTime
     // Pulse frequency (Hz) = 7.5Q, Q is flow rate in L/min.
-    l_hour = (flow_frequency * 60 /
-              7.5);  // (Pulse frequency x 60 min) / 7.5Q = flowrate in L/hour
-    flow_frequency = 0;         // Reset Counter
-    Serial.print(l_hour, DEC);  // Print litres/hour
-    Serial.println(" L/hour");
+    l_min = (flow_frequency * 60 /
+             450);  // (Pulse frequency x 60 min) / 7.5Q = flowrate in L/hour
+    flow_frequency = 0;        // Reset Counter
+    Serial.print(l_min, DEC);  // Print litres/hour
+    Serial.println(" L/min");
+
+    if (l_min == 0) {
+      digitalWrite(PUMPPIN, LOW);
+    }
   }
 
   //  Button funсtion with Relay
