@@ -229,10 +229,7 @@ void loop() {
   delay(1500);
 */
   // read the value from the Moisture sensor
-  
   sensorValue = analogRead(sensorPin);
-  Serial.print("Moisture = ");
-  Serial.println(sensorValue);
   delay(1000);
 /*
   // Water Flow Sensor
@@ -311,7 +308,7 @@ void webServer() {
             client.println("<!DOCTYPE html><html>");
             client.println("<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
             client.println("<link rel=\"icon\" href=\"data:,\">");
-            client.println("<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}");
+            client.println("<style> html {font-family: Arial; display: inline-block; text-align: center;}");            
             client.println(".on { background-color: #FF0000; border: 5px; color: white; padding: 16px 40px; border-radius: 20px;");
             client.println("text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}");
             client.println(".off {background-color: #000000;border: 5px; color: white; padding: 16px 40px; border-radius: 20px;");
@@ -325,8 +322,8 @@ void webServer() {
             } else {
               client.println("<p><a href=\"/ledoff1\"><button class=\"on\">Turn OFF</button></a></p>");
             }
-
-            client.println(<>);
+            client.println("<p>Moisture")
+            client.println(sensorValue);
             client.println("</body></html>");
 
             client.println();
