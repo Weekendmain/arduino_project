@@ -55,7 +55,9 @@ unsigned long counter = 0;
 volatile int flow_frequency = 0;  // Measures flow sensor pulsesunsigned
 int l_min;                        // Calculated litres/hour
 unsigned char flowsensor = 2;     // Sensor Input
-unsigned long currentTime;
+unsigned long currentTime = millis();
+unsigned long previousTime = 0;
+const long timeoutTime = 2000;
 unsigned long cloopTime;
 
 void flow()  // Interrupt function
@@ -69,6 +71,10 @@ float SensorTemperature = 0;
 float SensorMoisture = 0;
 float UVIndex = 0;
 char buffer[30];
+
+String output1 = "off";
+String output2 = "off";
+String header;
 
 // für OledDisplay
 #ifdef U8X8_HAVE_HW_SPI
@@ -128,7 +134,7 @@ void setup() {
     // network:
     status = WiFi.begin(ssid, pass);
     // wait 10 seconds for connection:
-    delay(10000);
+    delay(5000);
   }
   server.begin();  // start the web server on port 80
   printWifiStatus();
@@ -197,57 +203,8 @@ void setup() {
 long oldPosition = -999;
 
 void loop() {
-  WiFiClient client = server.available();  // listen for incoming clients
-
-  if (client) {                    // if you get a client,
-    Serial.println("new client");  // print a message out the serial port
-    String currentLine =
-        "";  // make a String to hold incoming data from the client
-    while (client.connected()) {  // loop while the client's connected
-      if (client.available()) {   // if there's bytes to read from the client,
-        char c = client.read();   // read a byte, then
-        Serial.write(c);          // print it out to the serial monitor
-        if (c == '\n') {          // if the byte is a newline character
-
-          // if the current line is blank, you got two newline characters in a
-          // row. that's the end of the client HTTP request, so send a response:
-          if (currentLine.length() == 0) {
-            // HTTP headers always start with a response code (e.g. HTTP/1.1 200
-            // OK) and a content-type so the client knows what's coming, then a
-            // blank line:
-            client.println("HTTP/1.1 200 OK");
-            client.println("Content-type:text/html");
-            client.println();
-
-            client.println("<!DOCTYPE HTML>");
-            client.println("<html>");
-            client.println("<head>");
-            client.println("<link rel=\"icon\" href=\"data:,\">");
-            client.println("</head>");
-
-            client.println("<p>");
-
-            client.print("Temperature: <span style=\"color: red;\">");
-            client.println("&deg;C</span>");
-
-            client.println("</p>");
-            client.println("</html>");
-            client.flush();
-            break;
-          } else {  // if you got a newline, then clear currentLine:
-            currentLine = "";
-          }
-        } else if (c != '\r') {  // if you got anything else but a carriage
-                                 // return character,
-          currentLine += c;      // add it to the end of the currentLine
-        }
-      }
-    }
-    // close the connection:
-    client.stop();
-    Serial.println("client disconnected");
-  }
-
+  webServer();
+/*
   // OledDisplay funсtion
   u8g2.clearBuffer();                  // clear the internal memory
   u8g2.setFont(u8g2_font_ncenB08_tr);  // choose a suitable font
@@ -270,13 +227,14 @@ void loop() {
     debug.println("Failed to get temprature and humidity value.");
   }
   delay(1500);
-
+*/
   // read the value from the Moisture sensor
+  
   sensorValue = analogRead(sensorPin);
   Serial.print("Moisture = ");
   Serial.println(sensorValue);
   delay(1000);
-
+/*
   // Water Flow Sensor
   currentTime = millis();  // Every second, calculate and print litres/hour
   if (currentTime >= (cloopTime >= 1000)) {
@@ -302,12 +260,6 @@ void loop() {
     digitalWrite(RELAY_PIN, HIGH);  // turn off
   }
 
-  /*// Wasserpumpe
-    void WaterPumpOn { digitalWrite(RelayPin, RelayOn); }
-
-    void WaterPumpOff() { digitalWrite(RelayPin, RelayOff); }
-  */
-
   // SunlightSensor
   Serial.print("Infrarotlicht: ");
   Serial.println(si1151.ReadIR());
@@ -325,6 +277,72 @@ void loop() {
   if (newPosition != oldPosition) {
     oldPosition = newPosition;
     Serial.println(newPosition);
+  }
+}
+
+void webServer() {
+  WiFiClient client = server.available();
+  if (client) {
+    Serial.println("New Client.");
+    String currentLine = "";
+    currentTime = millis();
+    previousTime = currentTime;
+    while (client.connected() && currentTime - previousTime <= timeoutTime) {
+      currentTime = millis();
+      if (client.available()) {
+        char c = client.read();
+        Serial.write(c);
+        header += c;
+        if (c == '\n') {
+          if (currentLine.length() == 0) {
+            client.println("HTTP/1.1 200 OK");
+            client.println("Content-type:text/html");
+            client.println("Connection: close");
+            client.println();
+
+            if (header.indexOf("GET /ledon1") >= 0) {
+              output1 = "on";
+              digitalWrite(RELAY_PIN, HIGH);
+            } else if (header.indexOf("GET /ledoff1") >= 0) {
+              output1 = "off";
+              digitalWrite(RELAY_PIN, LOW);
+            }
+
+            client.println("<!DOCTYPE html><html>");
+            client.println("<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
+            client.println("<link rel=\"icon\" href=\"data:,\">");
+            client.println("<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}");
+            client.println(".on { background-color: #FF0000; border: 5px; color: white; padding: 16px 40px; border-radius: 20px;");
+            client.println("text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}");
+            client.println(".off {background-color: #000000;border: 5px; color: white; padding: 16px 40px; border-radius: 20px;");
+            client.println("text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}</style></head>");
+
+            client.println("<body><h1>arduino project</h1>");
+
+            client.println("<p>Relay " + output1 + "</p>");
+            if (output1 == "off") {
+              client.println("<p><a href=\"/ledon1\"><button class=\"off\">Turn ON</button></a></p>");
+            } else {
+              client.println("<p><a href=\"/ledoff1\"><button class=\"on\">Turn OFF</button></a></p>");
+            }
+
+            client.println(<>);
+            client.println("</body></html>");
+
+            client.println();
+            break;
+          } else {
+            currentLine = "";
+          }
+        } else if (c != '\r') {
+          currentLine += c;
+        }
+      }
+    }
+    header = "";
+    client.stop();
+    Serial.println("Client disconnected.");
+    Serial.println("");
   }
 }
 
@@ -347,6 +365,7 @@ void printWifiStatus() {
   Serial.print("To see this page in action, open a browser to http://");
   Serial.println(ip);
 }
+
 
 /* float readDHTTemperature() {
   // Sensor readings may also be up to 2 seconds
