@@ -21,7 +21,7 @@ U8G2_SSD1306_128X64_ALT0_F_HW_I2C u8g2(
 // Lichtsensor
 SI114X SI1145 = SI114X();
 
-char ssid[] = "iPhone (Artem)";  // your network SSID (name)
+char ssid[] = "iPhone (Artem)";  // your network SSID (name) // Janniks Hotspot
 char pass[] =
     "12345678";    // your network password (use for WPA, or use as key for WEP)
 int keyIndex = 0;  // your network key index number (needed only for WEP)
@@ -204,12 +204,11 @@ long oldPosition = -999;
 
 void loop() {
   webServer();
-/*
+
   // OledDisplay funсtion
   u8g2.clearBuffer();                  // clear the internal memory
   u8g2.setFont(u8g2_font_ncenB08_tr);  // choose a suitable font
-  u8g2.drawStr(0, 10,
-               "Hello World!");  // write something to the internal memory
+  u8g2.drawStr(0, 10, "Hello World!");  // write something to the internal memory
   u8g2.sendBuffer();             // transfer internal memory to the display
   delay(1000);
 
@@ -227,7 +226,7 @@ void loop() {
     debug.println("Failed to get temprature and humidity value.");
   }
   delay(1500);
-*/
+
   // read the value from the Moisture sensor
   sensorValue = analogRead(sensorPin);
   delay(1000);
@@ -256,7 +255,7 @@ void loop() {
   } else if (buttonState == HIGH) {
     digitalWrite(RELAY_PIN, HIGH);  // turn off
   }
-
+*/
   // SunlightSensor
   Serial.print("Infrarotlicht: ");
   Serial.println(si1151.ReadIR());
@@ -264,10 +263,10 @@ void loop() {
   Serial.println(si1151.ReadVisible());
   delay(1000);
 
-  /*
-   * Sunlight - visible light, unit in lm
-   * IR - infrared light, unit in lm
-   */
+  
+   // Sunlight - visible light, unit in lm
+   // IR - infrared light, unit in lm
+   
 
   // Encoder
   long newPosition = myEnc.read();
@@ -322,8 +321,16 @@ void webServer() {
             } else {
               client.println("<p><a href=\"/ledoff1\"><button class=\"on\">Turn OFF</button></a></p>");
             }
-            client.println("<p>Moisture")
+            
+            client.println("<p>Moisture: ");
             client.println(sensorValue);
+            client.println("</p>");
+            /*
+            client.println("<p>Infrarotlicht: " + si1151.ReadIR());
+            client.println("</p>");
+            client.println("<p>Sichtbares Licht: " + si1151.ReadVisible());
+            client.println("</p>");
+            */
             client.println("</body></html>");
 
             client.println();
@@ -362,29 +369,3 @@ void printWifiStatus() {
   Serial.print("To see this page in action, open a browser to http://");
   Serial.println(ip);
 }
-
-
-/* float readDHTTemperature() {
-  // Sensor readings may also be up to 2 seconds
-  // Read temperature as Celsius (the default)
-  float t = dht.readTemperature();
-  if (isnan(t)) {
-    Serial.println("Failed to read from DHT sensor!");
-    return -1;
-  } else {
-    Serial.println(t);
-    return t;
-  }
-}
-float readDHTHumidity() {
-  // Sensor readings may also be up to 2 seconds
-  float h = dht.readHumidity();
-  if (isnan(h)) {
-    Serial.println("Failed to read from DHT sensor!");
-    return -1;
-  } else {
-    Serial.println(h);
-    return h;
-  }
-}
-*/
